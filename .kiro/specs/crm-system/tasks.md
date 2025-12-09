@@ -171,8 +171,8 @@
   - 配置令牌验证参数
   - _需求：5.2, 5.3, 5.6_
 
-- [ ] 10. 实现 Controllers
-- [ ] 10.1 实现 CustomersController
+- [x] 10. 实现 Controllers
+- [x] 10.1 实现 CustomersController
   - GET /api/customers（列表查询）
   - GET /api/customers/{id}（详情查询）
   - POST /api/customers（创建）
@@ -197,7 +197,7 @@
   - **属性 12：分页响应格式**
   - **验证：需求 2.9**
 
-- [ ] 10.6 实现 InteractionsController
+- [x] 10.6 实现 InteractionsController
   - GET /api/customers/{customerId}/interactions（时间线查询）
   - POST /api/customers/{customerId}/interactions（创建）
   - PUT /api/interactions/{id}（更新，含 If-Match 支持）
@@ -213,11 +213,11 @@
   - **属性 24：乐观并发控制有效性**
   - **验证：需求 10.3, 10.4**
 
-- [ ] 10.9 实现 AuthController（可选）
+- [x] 10.9 实现 AuthController（可选）
   - POST /api/auth/login
   - _需求：5.1, 5.4_
 
-- [ ] 10.10 实现 HealthController
+- [x] 10.10 实现 HealthController
   - GET /health
   - 检查数据库连接状态
   - 不暴露敏感配置
