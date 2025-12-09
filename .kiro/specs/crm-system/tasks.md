@@ -136,13 +136,13 @@
   - 实现初始管理员创建
   - _需求：5.1-5.8_
 
-- [ ] 8. 实现工具类和辅助方法
-- [ ] 8.1 实现 ETagHelper
+- [x] 8. 实现工具类和辅助方法
+- [x] 8.1 实现 ETagHelper
   - 实现 GenerateETag 方法
   - 实现 ParseETag 方法
   - _需求：10.3, 10.4, 10.5_
 
-- [ ] 8.2 实现自定义异常类
+- [x] 8.2 实现自定义异常类
   - 创建 ValidationException
   - 创建 NotFoundException
   - 创建 ConflictException

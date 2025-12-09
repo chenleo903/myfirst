@@ -1,13 +1,13 @@
 {
   "enabled": true,
-  "name": "Auto Git Commit After Stage",
-  "description": "Automatically commits new code changes to GitHub with a descriptive commit message whenever a stage of work is completed",
+  "name": "Auto Git Commit After Task Completion",
+  "description": "Automatically commits and pushes code changes to GitHub after agent completes a task",
   "version": "1",
   "when": {
     "type": "agentComplete"
   },
   "then": {
     "type": "runCommand",
-    "command": "git add -A && git commit -m \"$(echo 'Stage completed: ' && date '+%Y-%m-%d %H:%M:%S')\" && git push origin main"
+    "command": "git add -A && git commit -m \"Task completed: $(date '+%Y-%m-%d %H:%M:%S')\" && git push origin main"
   }
 }
