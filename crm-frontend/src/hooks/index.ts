@@ -1,5 +1,19 @@
-// React Query hooks will be added in Task 14.3
-// - useCustomers, useCustomer, useCreateCustomer, useUpdateCustomer, useDeleteCustomer
-// - useInteractions, useCreateInteraction, useUpdateInteraction, useDeleteInteraction
+// Customer hooks
+export {
+  customerKeys,
+  useCustomers,
+  useCustomer,
+  useCreateCustomer,
+  useUpdateCustomer,
+  useDeleteCustomer,
+} from './useCustomers';
 
-export {};
+// Interaction hooks
+export {
+  interactionKeys,
+  useInteractions,
+  useInteraction,
+  useCreateInteraction,
+  useUpdateInteraction,
+  useDeleteInteraction,
+} from './useInteractions';

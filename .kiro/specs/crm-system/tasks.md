@@ -261,14 +261,14 @@
   - 配置项目结构（pages, components, api, types, hooks）
   - _需求：前端需求_
 
-- [ ] 14. 实现前端 API 客户端
-- [ ] 14.1 创建 TypeScript 类型定义
+- [x] 14. 实现前端 API 客户端
+- [x] 14.1 创建 TypeScript 类型定义
   - 定义 Customer, Interaction, User 类型
   - 定义枚举类型
   - 定义 API 响应类型
   - _需求：前端需求_
 
-- [ ] 14.2 实现 API 客户端函数
+- [x] 14.2 实现 API 客户端函数
   - 实现 Axios 实例配置
   - 实现客户相关 API 函数
   - 实现互动记录相关 API 函数
@@ -276,7 +276,7 @@
   - 处理 ETag 和 If-Match 头
   - _需求：前端需求_
 
-- [ ] 14.3 创建 React Query hooks
+- [x] 14.3 创建 React Query hooks
   - 创建 useCustomers, useCustomer, useCreateCustomer, useUpdateCustomer, useDeleteCustomer
   - 创建 useInteractions, useCreateInteraction, useUpdateInteraction, useDeleteInteraction
   - 配置缓存策略和乐观更新
