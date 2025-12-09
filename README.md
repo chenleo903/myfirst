@@ -101,28 +101,59 @@ CrmSystem/
 
 使用 Docker Compose 一键启动完整系统：
 
-```bash
-docker-compose up -d
-```
+1. **复制环境变量配置文件**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **根据需要修改 `.env` 文件中的配置**
+
+3. **启动服务**
+   ```bash
+   docker-compose up -d
+   ```
+
+4. **查看日志**
+   ```bash
+   docker-compose logs -f api
+   ```
+
+5. **停止服务**
+   ```bash
+   docker-compose down
+   ```
+
+6. **停止服务并删除数据卷**
+   ```bash
+   docker-compose down -v
+   ```
 
 服务将在以下端口运行：
-- 后端 API: `http://localhost:5000`
-- 前端 Web: `http://localhost:3000`
+- 后端 API: `http://localhost:8080`
 - PostgreSQL: `localhost:5432`
+
+健康检查端点：`http://localhost:8080/health`
 
 ## 环境变量
 
-### 后端 API
+### Docker Compose 环境变量
 
 | 变量名 | 说明 | 默认值 | 必填 |
 |--------|------|--------|------|
-| `ConnectionStrings__DefaultConnection` | PostgreSQL 连接字符串 | - | 是 |
+| `POSTGRES_USER` | PostgreSQL 用户名 | `postgres` | 否 |
+| `POSTGRES_PASSWORD` | PostgreSQL 密码 | `postgres` | 否 |
+| `POSTGRES_DB` | PostgreSQL 数据库名 | `crm` | 否 |
+| `DB_PORT` | PostgreSQL 外部端口 | `5432` | 否 |
+| `API_PORT` | API 服务外部端口 | `8080` | 否 |
+| `AUTO_MIGRATE` | 启动时自动执行数据库迁移 | `true` | 否 |
 | `ENABLE_AUTH` | 是否启用 JWT 认证 | `false` | 否 |
 | `ADMIN_USERNAME` | 初始管理员用户名 | - | 启用认证时必填 |
 | `ADMIN_PASSWORD` | 初始管理员密码 | - | 启用认证时必填 |
-| `JWT_SECRET` | JWT 签名密钥 | - | 启用认证时必填 |
+| `JWT_SECRET` | JWT 签名密钥（至少32字符） | - | 启用认证时必填 |
 | `JWT_EXPIRY_MINUTES` | JWT 令牌过期时间（分钟） | `60` | 否 |
-| `AUTO_MIGRATE` | 启动时自动执行数据库迁移 | `false` | 否 |
+| `CORS_ORIGIN_1` | 允许的 CORS 来源 1 | `http://localhost:3000` | 否 |
+| `CORS_ORIGIN_2` | 允许的 CORS 来源 2 | `http://localhost:5173` | 否 |
+| `ASPNETCORE_ENVIRONMENT` | ASP.NET Core 环境 | `Production` | 否 |
 
 ## 核心功能
 

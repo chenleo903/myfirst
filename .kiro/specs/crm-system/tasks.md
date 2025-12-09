@@ -223,7 +223,7 @@
   - 不暴露敏感配置
   - _需求：7.3, 7.4_
 
-- [-] 11. 配置应用程序启动
+- [x] 11. 配置应用程序启动
 - [x] 11.1 配置 Program.cs
   - 配置服务注册（DbContext, Repositories, Services）
   - 配置中间件管道
@@ -242,13 +242,13 @@
   - **属性 23：失败响应格式一致性**
   - **验证：需求 6.2**
 
-- [ ] 12. 创建 Docker 配置
-- [ ] 12.1 创建后端 Dockerfile
+- [x] 12. 创建 Docker 配置
+- [x] 12.1 创建后端 Dockerfile
   - 多阶段构建
   - 优化镜像大小
   - _需求：8.1_
 
-- [ ] 12.2 创建 docker-compose.yml
+- [x] 12.2 创建 docker-compose.yml
   - 配置 db 服务（PostgreSQL 16）
   - 配置 api 服务（依赖 db）
   - 配置持久化卷

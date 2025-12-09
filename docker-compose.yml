@@ -1,0 +1,71 @@
+services:
+  # PostgreSQL 16 Database
+  db:
+    image: postgres:16-alpine
+    container_name: crm-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-crm}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-crm}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - crm-network
+
+  # ASP.NET Core API
+  api:
+    build:
+      context: ./CrmSystem.Api
+      dockerfile: Dockerfile
+    container_name: crm-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Database connection
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=${POSTGRES_DB:-crm};Username=${POSTGRES_USER:-postgres};Password=${POSTGRES_PASSWORD:-postgres}"
+      # Migration settings
+      Migration__AutoMigrate: ${AUTO_MIGRATE:-true}
+      # Authentication settings (optional)
+      Auth__EnableAuth: ${ENABLE_AUTH:-false}
+      Auth__AdminUsername: ${ADMIN_USERNAME:-}
+      Auth__AdminPassword: ${ADMIN_PASSWORD:-}
+      Auth__JwtSecret: ${JWT_SECRET:-}
+      Auth__JwtExpiryMinutes: ${JWT_EXPIRY_MINUTES:-60}
+      # CORS settings
+      Cors__AllowedOrigins__0: ${CORS_ORIGIN_1:-http://localhost:3000}
+      Cors__AllowedOrigins__1: ${CORS_ORIGIN_2:-http://localhost:5173}
+      # Logging
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
+    ports:
+      - "${API_PORT:-8080}:8080"
+    volumes:
+      - api_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - crm-network
+
+networks:
+  crm-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  api_logs:
+    driver: local
