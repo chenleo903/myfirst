@@ -12,15 +12,36 @@ public static class CorsConfiguration
     /// </summary>
     public static IServiceCollection AddCrmCors(this IServiceCollection services, IConfiguration configuration)
     {
-        var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() 
-            ?? new[] { "http://localhost:3000", "http://localhost:5173" };
+        // Normalize origins from configuration and allow common comma/semicolon separated formats
+        var configuredOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() 
+            ?? configuration["Cors:AllowedOrigins"]?.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
+            ?? Array.Empty<string>();
+
+        var allowedOrigins = configuredOrigins
+            .Where(o => !string.IsNullOrWhiteSpace(o))
+            .Select(o => o.Trim().TrimEnd('/')) // normalize so http://localhost:3000/ works
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        if (allowedOrigins.Length == 0)
+        {
+            allowedOrigins = new[] { "http://localhost:3000", "http://localhost:5173" };
+        }
 
         services.AddCors(options =>
         {
             options.AddPolicy(CorsPolicy, builder =>
             {
                 builder
-                    .WithOrigins(allowedOrigins)
+                    .SetIsOriginAllowed(origin =>
+                    {
+                        if (string.IsNullOrWhiteSpace(origin))
+                            return false;
+
+                        var normalized = origin.Trim().TrimEnd('/');
+                        return allowedOrigins.Any(o => 
+                            string.Equals(o, normalized, StringComparison.OrdinalIgnoreCase));
+                    })
                     .AllowAnyMethod()
                     .AllowAnyHeader()
                     .WithExposedHeaders("ETag", "Location")

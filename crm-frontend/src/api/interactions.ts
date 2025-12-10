@@ -14,7 +14,7 @@ export async function getInteractions(
   customerId: string
 ): Promise<ApiResponse<Interaction[]>> {
   const response = await apiClient.get<ApiResponse<Interaction[]>>(
-    `/api/customers/${customerId}/interactions`
+    `/customers/${customerId}/interactions`
   );
   return response.data;
 }
@@ -26,7 +26,7 @@ export async function getInteractions(
 export async function getInteraction(
   id: string
 ): Promise<{ data: ApiResponse<Interaction>; etag?: string }> {
-  const response = await apiClient.get<ApiResponse<Interaction>>(`/api/interactions/${id}`);
+  const response = await apiClient.get<ApiResponse<Interaction>>(`/interactions/${id}`);
   return {
     data: response.data,
     etag: response.headers['etag'] as string | undefined,
@@ -41,7 +41,7 @@ export async function createInteraction(
   request: CreateInteractionRequest
 ): Promise<{ data: ApiResponse<Interaction>; location?: string }> {
   const response = await apiClient.post<ApiResponse<Interaction>>(
-    `/api/customers/${customerId}/interactions`,
+    `/customers/${customerId}/interactions`,
     request
   );
   return {
@@ -67,7 +67,7 @@ export async function updateInteraction(
   }
   
   const response = await apiClient.put<ApiResponse<Interaction>>(
-    `/api/interactions/${id}`,
+    `/interactions/${id}`,
     request,
     { headers }
   );
@@ -89,5 +89,5 @@ export async function deleteInteraction(id: string, etag?: string): Promise<void
     headers['If-Match'] = etag;
   }
   
-  await apiClient.delete(`/api/interactions/${id}`, { headers });
+  await apiClient.delete(`/interactions/${id}`, { headers });
 }

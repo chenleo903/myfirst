@@ -34,53 +34,58 @@ public class InteractionService : IInteractionService
         CreateInteractionRequest request,
         CancellationToken cancellationToken = default)
     {
-        // 使用事务确保互动记录创建和客户 LastInteractionAt 更新的原子性
-        using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        var strategy = _context.Database.CreateExecutionStrategy();
 
-        try
+        return await strategy.ExecuteAsync(async () =>
         {
-            // 验证客户存在且未删除
-            var customer = await _context.Customers
-                .FirstOrDefaultAsync(c => c.Id == customerId && !c.IsDeleted, cancellationToken);
+            // 使用事务确保互动记录创建和客户 LastInteractionAt 更新的原子性
+            using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
 
-            if (customer == null)
+            try
             {
-                throw new NotFoundException("Customer not found");
+                // 验证客户存在且未删除
+                var customer = await _context.Customers
+                    .FirstOrDefaultAsync(c => c.Id == customerId && !c.IsDeleted, cancellationToken);
+
+                if (customer == null)
+                {
+                    throw new NotFoundException("Customer not found");
+                }
+
+                // 创建互动记录
+                var interaction = new Interaction
+                {
+                    Id = Guid.NewGuid(),
+                    CustomerId = customerId,
+                    HappenedAt = request.HappenedAt.ToUniversalTime(),
+                    Channel = request.Channel,
+                    Stage = request.Stage,
+                    Title = request.Title,
+                    Summary = request.Summary,
+                    RawContent = request.RawContent,
+                    NextAction = request.NextAction,
+                    Attachments = request.Attachments,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                    UpdatedAt = DateTimeOffset.UtcNow
+                };
+
+                _context.Interactions.Add(interaction);
+
+                // 更新客户的 LastInteractionAt
+                customer.LastInteractionAt = interaction.HappenedAt;
+                customer.UpdatedAt = DateTimeOffset.UtcNow;
+
+                await _context.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+
+                return interaction;
             }
-
-            // 创建互动记录
-            var interaction = new Interaction
+            catch
             {
-                Id = Guid.NewGuid(),
-                CustomerId = customerId,
-                HappenedAt = request.HappenedAt.ToUniversalTime(),
-                Channel = request.Channel,
-                Stage = request.Stage,
-                Title = request.Title,
-                Summary = request.Summary,
-                RawContent = request.RawContent,
-                NextAction = request.NextAction,
-                Attachments = request.Attachments,
-                CreatedAt = DateTimeOffset.UtcNow,
-                UpdatedAt = DateTimeOffset.UtcNow
-            };
-
-            _context.Interactions.Add(interaction);
-
-            // 更新客户的 LastInteractionAt
-            customer.LastInteractionAt = interaction.HappenedAt;
-            customer.UpdatedAt = DateTimeOffset.UtcNow;
-
-            await _context.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
-
-            return interaction;
-        }
-        catch
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            throw;
-        }
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
+            }
+        });
     }
 
     public async Task<List<Interaction>> GetInteractionsByCustomerIdAsync(
@@ -171,71 +176,76 @@ public class InteractionService : IInteractionService
         DateTimeOffset? originalUpdatedAt = null,
         CancellationToken cancellationToken = default)
     {
-        // 使用事务确保互动记录删除和客户 LastInteractionAt 重新计算的原子性
-        using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        var strategy = _context.Database.CreateExecutionStrategy();
 
-        try
+        await strategy.ExecuteAsync(async () =>
         {
-            var interaction = await _context.Interactions
-                .Include(i => i.Customer)
-                .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
+            // 使用事务确保互动记录删除和客户 LastInteractionAt 重新计算的原子性
+            using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
 
-            if (interaction == null)
+            try
             {
-                throw new NotFoundException("Interaction not found");
-            }
+                var interaction = await _context.Interactions
+                    .Include(i => i.Customer)
+                    .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
 
-            // 验证版本（如果提供了 If-Match）
-            if (originalUpdatedAt.HasValue)
-            {
-                var currentMillis = interaction.UpdatedAt.ToUnixTimeMilliseconds();
-                var providedMillis = originalUpdatedAt.Value.ToUnixTimeMilliseconds();
-
-                if (currentMillis != providedMillis)
+                if (interaction == null)
                 {
-                    throw new ConcurrencyException("Interaction has been modified by another user", interaction.UpdatedAt);
+                    throw new NotFoundException("Interaction not found");
                 }
+
+                // 验证版本（如果提供了 If-Match）
+                if (originalUpdatedAt.HasValue)
+                {
+                    var currentMillis = interaction.UpdatedAt.ToUnixTimeMilliseconds();
+                    var providedMillis = originalUpdatedAt.Value.ToUnixTimeMilliseconds();
+
+                    if (currentMillis != providedMillis)
+                    {
+                        throw new ConcurrencyException("Interaction has been modified by another user", interaction.UpdatedAt);
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("Delete request without If-Match header for interaction {InteractionId}", id);
+                }
+
+                var customerId = interaction.CustomerId;
+
+                // 删除互动记录
+                _context.Interactions.Remove(interaction);
+
+                // 重新计算客户的 LastInteractionAt
+                var latestInteraction = await _context.Interactions
+                    .Where(i => i.CustomerId == customerId && i.Id != id)
+                    .OrderByDescending(i => i.HappenedAt)
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                var customer = interaction.Customer;
+                customer.LastInteractionAt = latestInteraction?.HappenedAt;
+                customer.UpdatedAt = DateTimeOffset.UtcNow;
+
+                await _context.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
             }
-            else
+            catch (DbUpdateConcurrencyException)
             {
-                _logger.LogWarning("Delete request without If-Match header for interaction {InteractionId}", id);
+                await transaction.RollbackAsync(cancellationToken);
+                var current = await _context.Interactions
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
+                
+                if (current != null)
+                {
+                    throw new ConcurrencyException("Interaction has been modified by another user", current.UpdatedAt);
+                }
+                throw;
             }
-
-            var customerId = interaction.CustomerId;
-
-            // 删除互动记录
-            _context.Interactions.Remove(interaction);
-
-            // 重新计算客户的 LastInteractionAt
-            var latestInteraction = await _context.Interactions
-                .Where(i => i.CustomerId == customerId && i.Id != id)
-                .OrderByDescending(i => i.HappenedAt)
-                .FirstOrDefaultAsync(cancellationToken);
-
-            var customer = interaction.Customer;
-            customer.LastInteractionAt = latestInteraction?.HappenedAt;
-            customer.UpdatedAt = DateTimeOffset.UtcNow;
-
-            await _context.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            var current = await _context.Interactions
-                .AsNoTracking()
-                .FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
-            
-            if (current != null)
+            catch
             {
-                throw new ConcurrencyException("Interaction has been modified by another user", current.UpdatedAt);
+                await transaction.RollbackAsync(cancellationToken);
+                throw;
             }
-            throw;
-        }
-        catch
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            throw;
-        }
+        });
     }
 }

@@ -14,7 +14,7 @@ import type {
 export async function getCustomers(
   params: CustomerSearchRequest = {}
 ): Promise<ApiResponse<PagedResponse<Customer>>> {
-  const response = await apiClient.get<ApiResponse<PagedResponse<Customer>>>('/api/customers', {
+  const response = await apiClient.get<ApiResponse<PagedResponse<Customer>>>('/customers', {
     params,
   });
   return response.data;
@@ -27,7 +27,7 @@ export async function getCustomers(
 export async function getCustomer(
   id: string
 ): Promise<{ data: ApiResponse<Customer>; etag?: string }> {
-  const response = await apiClient.get<ApiResponse<Customer>>(`/api/customers/${id}`);
+  const response = await apiClient.get<ApiResponse<Customer>>(`/customers/${id}`);
   return {
     data: response.data,
     etag: response.headers['etag'] as string | undefined,
@@ -40,7 +40,7 @@ export async function getCustomer(
 export async function createCustomer(
   request: CreateCustomerRequest
 ): Promise<{ data: ApiResponse<Customer>; location?: string }> {
-  const response = await apiClient.post<ApiResponse<Customer>>('/api/customers', request);
+  const response = await apiClient.post<ApiResponse<Customer>>('/customers', request);
   return {
     data: response.data,
     location: response.headers['location'] as string | undefined,
@@ -64,7 +64,7 @@ export async function updateCustomer(
   }
   
   const response = await apiClient.put<ApiResponse<Customer>>(
-    `/api/customers/${id}`,
+    `/customers/${id}`,
     request,
     { headers }
   );
@@ -86,5 +86,5 @@ export async function deleteCustomer(id: string, etag?: string): Promise<void> {
     headers['If-Match'] = etag;
   }
   
-  await apiClient.delete(`/api/customers/${id}`, { headers });
+  await apiClient.delete(`/customers/${id}`, { headers });
 }
