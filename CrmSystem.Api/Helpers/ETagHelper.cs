@@ -9,7 +9,7 @@ public static class ETagHelper
     /// Generates a weak ETag from a DateTimeOffset timestamp
     /// </summary>
     /// <param name="updatedAt">The UpdatedAt timestamp</param>
-    /// <returns>A weak ETag in the format W/"<unix_milliseconds>"</returns>
+    /// <returns>A weak ETag in the format W/"unix_milliseconds"</returns>
     public static string GenerateETag(DateTimeOffset updatedAt)
     {
         var milliseconds = updatedAt.ToUnixTimeMilliseconds();

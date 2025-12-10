@@ -82,7 +82,58 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<MigrationService>();
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "CRM System API",
+        Version = "v1",
+        Description = "一个简洁的自用 CRM（客户关系管理）系统 API，支持客户管理、互动记录跟踪等功能。",
+        Contact = new Microsoft.OpenApi.Models.OpenApiContact
+        {
+            Name = "CRM System",
+            Email = "support@example.com"
+        },
+        License = new Microsoft.OpenApi.Models.OpenApiLicense
+        {
+            Name = "MIT License",
+            Url = new Uri("https://opensource.org/licenses/MIT")
+        }
+    });
+    
+    // Add JWT authentication support in Swagger UI
+    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+        Name = "Authorization",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+    
+    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+    
+    // Include XML comments for API documentation
+    var xmlFilename = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
+    if (File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath);
+    }
+});
 
 var app = builder.Build();
 
@@ -155,12 +206,14 @@ app.UseExceptionHandling();
 // Request logging middleware
 app.UseRequestLogging();
 
-// Swagger (development only)
-if (app.Environment.IsDevelopment())
+// Swagger - available in all environments for API documentation
+app.UseSwagger();
+app.UseSwaggerUI(options =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    options.SwaggerEndpoint("/swagger/v1/swagger.json", "CRM System API v1");
+    options.RoutePrefix = "swagger";
+    options.DocumentTitle = "CRM System API Documentation";
+});
 
 app.UseHttpsRedirection();
 
@@ -186,9 +239,7 @@ finally
     Log.CloseAndFlush();
 }
 
-/// <summary>
-/// Extracts the database host from connection string without exposing sensitive information
-/// </summary>
+// Extracts the database host from connection string without exposing sensitive information
 static string GetDatabaseHost(string connectionString)
 {
     try
